@@ -1,11 +1,5 @@
 // about:debugging
 
-// http://www.omdbapi.com/?t=The+Devil+Is+a+Part-Timer!&y=2013&apikey=8f695bca
-
-// web-content-tile__content-digest
-// web-content-tile__title
-// web-content-tile__year
-
 function getKey(movieName) {
     return movieName.replace(/\s+/g, '+');
 }
@@ -58,7 +52,6 @@ async function getRanking(movieName, movieYear) {
     } else {
         let movieId = await getMovieId(movieNameKey, movieYear);
         let url = "http://www.omdbapi.com/?i=" + String(movieId) + "&apikey=8f695bca";
-        // let url = "http://www.omdbapi.com/?t=" + movieNameKey + "&y=" + movieYear + "&apikey=8f695bca";
         console.log(url)
         if (movieId) {
             let data = await fetch(url);
@@ -69,16 +62,32 @@ async function getRanking(movieName, movieYear) {
             } else {
                 imdbRating = "not found";
             }
-            await saveInfo(movieNameKey, imdbRating);
-            return imdbRating;
+            let movieData = { imdbRating, movieId };
+            await saveInfo(movieNameKey, movieData);
+            return movieData;
         }
     }
 }
 
-// document.body.textContent = "";
-// let header = document.createElement("h1");
-// header.textContent = "This page has been eaten";
-// document.body.appendChild(header);
+function injectRanking(parentElement, titleElement, movieData) {
+    const div = document.createElement("div");
+    div.className = "web-rating";
+    div.style.whiteSpace = "pre";
+
+    let r = parseFloat(movieData.imdbRating)
+    if (r < 4) {
+        div.style.backgroundColor = "red";
+        div.style.color = "black";
+    } else if (r < 6) {
+        div.style.backgroundColor = "orange";
+        div.style.color = "black";
+    } else {
+        div.style.backgroundColor = "green";
+    }
+
+    div.innerHTML = `${movieData.imdbRating} | <a href="https://www.imdb.com/title/${movieData.movieId}/">${movieData.movieId}</a>`;
+    titleElement.after(div);
+}
 
 console.log("start adding ranking :D")
 // browser.storage.local.clear()
@@ -87,29 +96,11 @@ var parentElements = document.getElementsByClassName('web-content-tile__content-
 for (let i = 0; i < parentElements.length; ++i) {
     let parentElement = parentElements[i];
     try {
-        let movieName = parentElement.getElementsByClassName("web-content-tile__title")[0].innerHTML;
+        let titleElement = parentElement.getElementsByClassName("web-content-tile__title")[0];
+        let movieName = titleElement.innerHTML;
         let movieYear = parentElement.getElementsByClassName("web-content-tile__year")[0].innerHTML;
-        getRanking(movieName, movieYear).then((ranking) => { console.log("ranking", movieName, ranking) })
+        getRanking(movieName, movieYear).then((movieData) => { injectRanking(parentElement, titleElement, movieData) })
     } catch (error) {
         console.error("error in parsing element", error, parentElement)
     }
 }
-
-{/* <div class="web-content-tile__content-digest">
-  <a href="/series/300010104/la-s-finest" class="web-content-tile__title"
-    >LA's Finest</a
-  >
-  <div class="web-content-tile__year-duration-rating">
-    <div class="web-content-tile__year">2019</div>
-    <div class="web-content-tile__rating">
-      <div class="web-rating"><div class="web-rating__content">TV-14</div></div>
-    </div>
-  </div>
-  <div class="web-content-tile__tags-row">
-    <div class="web-content-tile__tags">
-      Action&nbsp;·&nbsp;Comedy&nbsp;·&nbsp;Crime
-    </div>
-  </div>
-</div> */}
-
-// http://www.omdbapi.com/?s=Medusa%27s+Venom:+The+Beast+is+Back&apikey=8f695bca
