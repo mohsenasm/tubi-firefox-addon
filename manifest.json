@@ -1,0 +1,16 @@
+{
+    "manifest_version": 2,
+    "name": "tubi-add-ranking",
+    "version": "1.0",
+    "permissions": ["storage", "*://www.omdbapi.com/*"],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://tubitv.com/*"
+            ],
+            "js": [
+                "add-ranking.js"
+            ]
+        }
+    ]
+}
