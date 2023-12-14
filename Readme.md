@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/mohsenasm/tubi-firefox-addon/main/icons/main.png"> tubi-firefox-addon
+# <img height="35" src="https://raw.githubusercontent.com/mohsenasm/tubi-firefox-addon/main/icons/main.png"> tubi-firefox-addon
 
 A firefox add-on that adds IMDB ranking to tubitv.com
 
