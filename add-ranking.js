@@ -1,5 +1,5 @@
-function getKey(movieName) {
-    return movieName.replace(/\s+/g, '+');
+function getKey(movieName, movieYear) {
+    return String(movieName).replace(/\s+/g, '+') + "+" + String(movieYear);
 }
 
 async function saveInfo(key, value) {
@@ -13,12 +13,12 @@ async function getInfo(key) {
     return res[key];
 }
 
-async function getMovieId(movieNameKey, movieYear) {
+async function getMovieId(movieNameKey) {
     // https://html.duckduckgo.com/html/?q=site:imdb.com+la+finest
     // <a rel="nofollow" class="result__a" href="https://www.imdb.com/title/tt7555294/">L.A.&#x27;s Finest (TV Series 2019-2020) - IMDb</a>
     // <a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.imdb.com%2Ftitle%2Ftt7555294%2Fepisodes%2F%3Fyear%3D2019&amp;rut=e59eeb5a916d3deb5b6a93a48563cfaac11000afd26c4912db5aff55ad120b9f">L.A.&#x27;s Finest (TV Series 2019-2020) - Episode list - IMDb</a>
 
-    let url = "https://html.duckduckgo.com/html/?q=site:imdb.com+" + movieNameKey + "+" + String(movieYear);
+    let url = "https://html.duckduckgo.com/html/?q=site:imdb.com+" + movieNameKey;
     let data = await fetch(url);
     let text = await data.text();
     const parser = new DOMParser();
@@ -43,12 +43,12 @@ async function getMovieId(movieNameKey, movieYear) {
 }
 
 async function getRanking(movieName, movieYear) {
-    let movieNameKey = getKey(movieName);
+    let movieNameKey = getKey(movieName, movieYear);
     let value = await getInfo(movieNameKey);
     if (value !== undefined) {
         return value;
     } else {
-        let movieId = await getMovieId(movieNameKey, movieYear);
+        let movieId = await getMovieId(movieNameKey);
         let url = "http://www.omdbapi.com/?i=" + String(movieId) + "&apikey=8f695bca";
         console.log(url)
         if (movieId) {
@@ -87,7 +87,7 @@ function injectRanking(parentElement, titleElement, movieData) {
     titleElement.after(div);
 }
 
-console.log("start adding ranking :D")
+// console.log("start adding ranking :D")
 // browser.storage.local.clear()
 
 // note that we can not use 'let', beacuse of redeclaring of this var, when a user click twice
