@@ -1,6 +1,12 @@
 # tubi-firefox-addon
 
-a firefox addon that adds IMDB ranking to tubitv.com
+A firefox add-on that adds IMDB ranking to tubitv.com
+
+## Usage
+
+1. Go to a page in tubitv.com
+2. Click on the add-on icon in the firefox toolbar
+3. The add-on will add IMDB ranking to each Movie/TV title
 
 ## Build
 
