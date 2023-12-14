@@ -1,5 +1,3 @@
-// about:debugging
-
 function getKey(movieName) {
     return movieName.replace(/\s+/g, '+');
 }
@@ -71,7 +69,7 @@ async function getRanking(movieName, movieYear) {
 
 function injectRanking(parentElement, titleElement, movieData) {
     const div = document.createElement("div");
-    div.className = "web-rating";
+    div.className = "web-rating tubi-add-ranking";
     div.style.whiteSpace = "pre";
 
     let r = parseFloat(movieData.imdbRating)
@@ -91,6 +89,13 @@ function injectRanking(parentElement, titleElement, movieData) {
 
 console.log("start adding ranking :D")
 // browser.storage.local.clear()
+
+// note that we can not use 'let', beacuse of redeclaring of this var, when a user click twice
+var oldRankings = document.querySelectorAll(".tubi-add-ranking");
+for (let i = 0; i < oldRankings.length; i++) {
+    const element = oldRankings[i];
+    element.remove();
+}
 
 var parentElements = document.getElementsByClassName('web-content-tile__content-digest');
 for (let i = 0; i < parentElements.length; ++i) {
