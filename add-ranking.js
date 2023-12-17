@@ -50,12 +50,12 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)) };
 
 function getRandomInt(max) { return Math.floor(Math.random() * max); }
 
-async function getRanking(movieName, movieYear) {
-    let movieNameKey = getKey(movieName, movieYear);
+async function getRanking(title, onlyUseCache) {
+    let movieNameKey = getKey(title.movieName, title.movieYear);
     let value = await getInfo(movieNameKey);
     if (value !== undefined) {
         return value;
-    } else {
+    } else if (onlyUseCache === false) {
         let movieId = await getMovieId(movieNameKey);
         if (movieId) {
             let url = "http://www.omdbapi.com/?i=" + String(movieId) + "&apikey=8f695bca";
@@ -122,8 +122,8 @@ function injectRanking(title, movieData) {
     }
 }
 
-async function getAndInjectRanking(title) {
-    let movieData = await getRanking(title.movieName, title.movieYear);
+async function getAndInjectRanking(title, onlyUseCache = false) {
+    let movieData = await getRanking(title, onlyUseCache);
     if (movieData) {
         injectRanking(title, movieData)
         return { success: true }
@@ -140,17 +140,32 @@ async function runTasks(titles) {
         injectLoading(title);
     }
 
-    // fast retrieval + add cached ones
-    let promises = [];
+    // add cached ones
+    let nonCachedTitle = [];
     for (let i = 0; i < titles.length; i++) {
         const title = titles[i];
-        promises.push(getAndInjectRanking(title));
+        let result = await getAndInjectRanking(title, true);
+        if (result.success === false) {
+            nonCachedTitle.push(title);
+        }
     }
-    let results = await Promise.all(promises);
+
+    // fast retrieval
+    let results = [];
+    const BATCH_IN_PARALLEL = 5;
+    for (let i = 0; i < nonCachedTitle.length;) {
+        let promises = [];
+        for (let j = 0; j < BATCH_IN_PARALLEL && i < nonCachedTitle.length; i++, j++) {
+            let title = nonCachedTitle[i];
+            promises.push(getAndInjectRanking(title));
+        }
+        let partialResults = await Promise.all(promises);
+        results = results.concat(partialResults)
+    }
     let failedTitles = [];
     for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        if (result.success !== true) {
+        if (result.success === false) {
             let t = result.title;
             t.tryCount = 1;
             failedTitles.push(t);
@@ -166,12 +181,13 @@ async function runTasks(titles) {
         const title = failedTitles.pop();
         await sleep((getRandomInt(1000) + 500) * title.tryCount);
         let result = await getAndInjectRanking(title);
-        if (result.success !== true) {
+        if (result.success === false) {
             title.tryCount += 1;
             // try again later
             if (title.tryCount <= 3) {
                 failedTitles.push(title);
             } else {
+                console.log("tubi-firefox-addon: could not get", title.movieName);
                 removeExistingRakingFromElement(title.parentElement);
             }
         }
