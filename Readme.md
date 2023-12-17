@@ -4,7 +4,7 @@ A Firefox add-on that adds IMDB ranking to tubitv.com
 
 ## Installation
 
-https://addons.mozilla.org/en-US/firefox/addon/tubi-add-ranking/
+https://addons.mozilla.org/firefox/addon/tubi-add-ranking/
 
 ## Usage
 
