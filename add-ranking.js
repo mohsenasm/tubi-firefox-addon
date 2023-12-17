@@ -35,10 +35,10 @@ async function getMovieId(movieNameKey) {
             if (groups[2])
                 return groups[2];
         } else {
-            console.log("e2", href, groups)
+            console.log("tubi-firefox-addon: error2:", href, groups)
         }
     }
-    console.log("e3", url, text)
+    console.log("tubi-firefox-addon: error3:", url, text)
     return undefined;
 }
 
@@ -49,63 +49,76 @@ async function getRanking(movieName, movieYear) {
         return value;
     } else {
         let movieId = await getMovieId(movieNameKey);
-        let url = "http://www.omdbapi.com/?i=" + String(movieId) + "&apikey=8f695bca";
-        console.log(url)
         if (movieId) {
+            let url = "http://www.omdbapi.com/?i=" + String(movieId) + "&apikey=8f695bca";
             let data = await fetch(url);
             let json = await data.json();
-            let imdbRating;
+
+            let imdbRating, imdbVotes;
+            let foundImdbRating = false;
             if (json.Response) {
+                foundImdbRating = true;
                 imdbRating = json.imdbRating;
-            } else {
-                imdbRating = "not found";
+                imdbVotes = json.imdbVotes;
             }
-            let movieData = { imdbRating, movieId };
+            let movieData = { imdbRating, imdbVotes, movieId, foundImdbRating };
+
             await saveInfo(movieNameKey, movieData);
             return movieData;
         }
     }
 }
 
-function injectRanking(parentElement, titleElement, movieData) {
+function injectRanking(titleElement, movieData) {
     const div = document.createElement("div");
     div.className = "web-rating tubi-add-ranking";
     div.style.whiteSpace = "pre";
 
-    let r = parseFloat(movieData.imdbRating)
-    if (r < 4) {
-        div.style.backgroundColor = "red";
-        div.style.color = "black";
-    } else if (r < 6) {
-        div.style.backgroundColor = "orange";
-        div.style.color = "black";
-    } else {
-        div.style.backgroundColor = "green";
+    if (movieData.foundImdbRating) {
+        let r = parseFloat(movieData.imdbRating)
+        if (isNaN(r)) {
+            div.style.backgroundColor = "gray";
+            div.style.color = "white";
+        } else if (r < 4) {
+            div.style.backgroundColor = "red";
+            div.style.color = "black";
+        } else if (r < 6) {
+            div.style.backgroundColor = "orange";
+            div.style.color = "black";
+        } else {
+            div.style.backgroundColor = "green";
+            div.style.color = "white";
+        }
+
+        div.innerHTML = `${movieData.imdbRating} | ${movieData.imdbVotes} votes`;
+        div.onclick = (e) => {
+            e.preventDefault();
+            window.open(`https://www.imdb.com/title/${movieData.movieId}/`);
+        };
+        titleElement.after(div);
     }
 
-    div.innerHTML = `${movieData.imdbRating} | <a href="https://www.imdb.com/title/${movieData.movieId}/">${movieData.movieId}</a>`;
-    titleElement.after(div);
 }
 
-// console.log("start adding ranking :D")
-// browser.storage.local.clear()
+function main() {
+    let oldRankings = document.querySelectorAll(".tubi-add-ranking");
+    for (let i = 0; i < oldRankings.length; i++) {
+        const element = oldRankings[i];
+        element.remove();
+    }
 
-// note that we can not use 'let', beacuse of redeclaring of this var, when a user click twice
-var oldRankings = document.querySelectorAll(".tubi-add-ranking");
-for (let i = 0; i < oldRankings.length; i++) {
-    const element = oldRankings[i];
-    element.remove();
-}
-
-var parentElements = document.getElementsByClassName('web-content-tile__content-digest');
-for (let i = 0; i < parentElements.length; ++i) {
-    let parentElement = parentElements[i];
-    try {
-        let titleElement = parentElement.getElementsByClassName("web-content-tile__title")[0];
-        let movieName = titleElement.innerHTML;
-        let movieYear = parentElement.getElementsByClassName("web-content-tile__year")[0].innerHTML;
-        getRanking(movieName, movieYear).then((movieData) => { injectRanking(parentElement, titleElement, movieData) })
-    } catch (error) {
-        console.error("error in parsing element", error, parentElement)
+    let parentElements = document.getElementsByClassName('web-content-tile__content-digest');
+    for (let i = 0; i < parentElements.length; ++i) {
+        let parentElement = parentElements[i];
+        try {
+            let titleElement = parentElement.getElementsByClassName("web-content-tile__title")[0];
+            let movieName = titleElement.innerHTML;
+            let movieYear = parentElement.getElementsByClassName("web-content-tile__year")[0].innerHTML;
+            getRanking(movieName, movieYear).then((movieData) => { injectRanking(titleElement, movieData) })
+        } catch (error) {
+            console.error("error in parsing element", error, parentElement)
+        }
     }
 }
+
+main()
