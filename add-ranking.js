@@ -204,7 +204,18 @@ function removeExistingRakingFromElement(parent) {
     }
 }
 
-function main() {
+async function checkDataVersion() {
+    const CURRENT_VERSION = 1;
+    let value = await getInfo("data-version");
+    if ((value === undefined) || value < CURRENT_VERSION) {
+        browser.storage.local.clear();
+        await saveInfo("data-version", CURRENT_VERSION);
+    }
+}
+
+async function main() {
+    await checkDataVersion();
+
     let titles = [];
     let parentElements = document.getElementsByClassName('web-content-tile__content-digest');
     for (let i = 0; i < parentElements.length; ++i) {
